@@ -1,19 +1,22 @@
-import { test } from '@playwright/test';
-import { HomePage } from './pages/home.page';
+import { test } from './fixtures/custom-test';
 
 test.describe('Expense splitter e2e', () => {
-  test('@smoke should create trip, add members, and compute settlement', async ({ page }) => {
-    const home = new HomePage(page);
-    await home.goto();
+  test('@smoke should create trip, add members, and compute settlement', async ({ homePage, scenarioData }) => {
+    await homePage.goto();
+    await homePage.createTrip(scenarioData.tripName);
 
-    await home.createTrip('Goa Trip');
-    await home.addMember('Alice');
-    await home.addMember('Bob');
-    await home.addMember('Charlie');
+    for (const member of scenarioData.members) {
+      await homePage.addMember(member);
+    }
 
-    await home.addExpense('Dinner', 'Alice', '90');
+    await homePage.addExpense(
+      scenarioData.expense.description,
+      scenarioData.expense.payer,
+      scenarioData.expense.amount
+    );
 
-    await home.assertSettlement('Bob pays Alice: 30.00');
-    await home.assertSettlement('Charlie pays Alice: 30.00');
+    for (const settlement of scenarioData.expectedSettlements) {
+      await homePage.assertSettlement(settlement);
+    }
   });
 });

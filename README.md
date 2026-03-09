@@ -17,8 +17,13 @@ A practical starter app where you can build and test a real workflow in two auto
 │   └── web/index.html
 ├── tests/
 │   ├── e2e-ts/
+│   │   ├── fixtures/
 │   │   ├── pages/home.page.ts
 │   │   └── home.spec.ts
+│   └── bdd/
+│       ├── framework.ts
+│       ├── expense-splitter.bdd.spec.ts
+│       └── features/expense-splitter.feature
 │   └── e2e-dotnet/TiaTrip.E2E.Dotnet/
 │       ├── HomeTests.cs
 │       └── TiaTrip.E2E.Dotnet.csproj
@@ -67,6 +72,25 @@ npm run test:ts
 npm run test:ts:headed
 npm run test:ts:smoke
 ```
+
+## Run BDD tests (Playwright BDD style)
+
+Start API and web app in two terminals:
+
+```bash
+npm run api:start
+npm run web:start
+```
+
+Then run BDD suite:
+
+```bash
+npm run test:bdd
+```
+
+Starter scenarios are in:
+- `tests/bdd/expense-splitter.bdd.spec.ts` (executable)
+- `tests/bdd/features/expense-splitter.feature` (readable Gherkin scenarios)
 
 ## Run C# Playwright tests
 

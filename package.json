@@ -11,6 +11,7 @@
     "test:ts:ui": "playwright test -c playwright.config.ts --ui",
     "test:ts:debug": "playwright test -c playwright.config.ts --debug",
     "test:ts:smoke": "playwright test -c playwright.config.ts --grep @smoke",
+    "test:bdd": "playwright test -c playwright.config.ts tests/bdd",
     "report:ts": "playwright show-report",
     "install:browsers": "playwright install",
     "test": "npm run test:ts"
