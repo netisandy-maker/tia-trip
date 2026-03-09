@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-ts:
+    name: TypeScript Playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run TS tests
+        run: npm run test:ts
+
+      - name: Upload TS report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-ts
+          path: playwright-report/
+          retention-days: 7
+
+  e2e-dotnet:
+    name: C# Playwright
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: http://127.0.0.1:4173
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers for Node
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright browsers for .NET
+        run: |
+          dotnet restore tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj
+          dotnet build tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj --configuration Release --no-restore
+          pwsh tests/e2e-dotnet/TiaTrip.E2E.Dotnet/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Start local web app
+        run: nohup npm run web:start > web.log 2>&1 &
+
+      - name: Wait for web app
+        run: npx wait-on http://127.0.0.1:4173
+
+      - name: Run C# tests
+        run: dotnet test tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload C# test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TestResults/
+          retention-days: 7

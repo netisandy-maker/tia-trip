@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TIA Trip</title>
+    <style>
+      :root {
+        --bg: #eef6ff;
+        --card: #ffffff;
+        --text: #1a2733;
+        --muted: #4f6170;
+        --accent: #0077b6;
+        --ok-bg: #daf5df;
+        --ok-text: #155724;
+        --warn-bg: #ffe4d6;
+        --warn-text: #7f2a10;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top right, #cde8ff, var(--bg));
+      }
+
+      main {
+        max-width: 920px;
+        margin: 28px auto;
+        padding: 0 16px 32px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: 0 16px 32px rgba(15, 29, 42, 0.1);
+        padding: 20px;
+      }
+
+      h1, h2 {
+        margin: 0 0 12px;
+      }
+
+      p {
+        margin: 8px 0;
+        color: var(--muted);
+      }
+
+      form {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        margin-top: 6px;
+        padding: 10px 12px;
+        font: inherit;
+        border-radius: 10px;
+      }
+
+      input,
+      select {
+        border: 1px solid #c4d4e2;
+      }
+
+      button {
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .status,
+      .info {
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+      }
+
+      .status {
+        background: var(--ok-bg);
+        color: var(--ok-text);
+      }
+
+      .status.error {
+        background: var(--warn-bg);
+        color: var(--warn-text);
+      }
+
+      .member-list,
+      .summary-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .summary-list li {
+        margin: 6px 0;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      @media (min-width: 860px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .full {
+          grid-column: 1 / -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card full">
+        <h1>TIA Trip</h1>
+        <p>Build trip expenses and instantly calculate who owes whom.</p>
+        <p class="info">API URL: <code id="api-url">http://127.0.0.1:5080</code></p>
+        <p id="status" data-testid="status" class="status">Ready</p>
+      </section>
+
+      <section class="card">
+        <h2>Create Trip</h2>
+        <form id="trip-form">
+          <label>
+            Trip Name
+            <input id="trip-name" data-testid="trip-name" required placeholder="Goa Trip" />
+          </label>
+          <button type="submit" data-testid="create-trip-btn">Create Trip</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Add Member</h2>
+        <form id="member-form">
+          <label>
+            Member Name
+            <input id="member-name" data-testid="member-name" required placeholder="Sandhya" />
+          </label>
+          <button type="submit" data-testid="add-member-btn">Add Member</button>
+        </form>
+        <ul id="members" data-testid="members-list" class="member-list"></ul>
+      </section>
+
+      <section class="card full">
+        <h2>Add Expense</h2>
+        <form id="expense-form">
+          <label>
+            Description
+            <input id="expense-description" data-testid="expense-description" required placeholder="Dinner" />
+          </label>
+          <label>
+            Paid By
+            <select id="paid-by" data-testid="paid-by" required></select>
+          </label>
+          <label>
+            Amount
+            <input id="amount" data-testid="amount" type="number" step="0.01" min="0.01" required placeholder="90" />
+          </label>
+          <fieldset>
+            <legend>Participants</legend>
+            <div id="participants" data-testid="participants"></div>
+          </fieldset>
+          <button type="submit" data-testid="add-expense-btn">Add Expense</button>
+        </form>
+      </section>
+
+      <section class="card full">
+        <h2>Summary</h2>
+        <h3>Balances</h3>
+        <ul id="balances" data-testid="balances-list" class="summary-list"></ul>
+        <h3>Settlements</h3>
+        <ul id="settlements" data-testid="settlements-list" class="summary-list"></ul>
+      </section>
+    </main>
+
+    <script>
+      const API_BASE_URL = 'http://127.0.0.1:5080';
+      const tripForm = document.getElementById('trip-form');
+      const memberForm = document.getElementById('member-form');
+      const expenseForm = document.getElementById('expense-form');
+
+      const statusEl = document.getElementById('status');
+      const membersEl = document.getElementById('members');
+      const paidByEl = document.getElementById('paid-by');
+      const participantsEl = document.getElementById('participants');
+      const balancesEl = document.getElementById('balances');
+      const settlementsEl = document.getElementById('settlements');
+
+      const tripNameInput = document.getElementById('trip-name');
+      const memberNameInput = document.getElementById('member-name');
+      const descriptionInput = document.getElementById('expense-description');
+      const amountInput = document.getElementById('amount');
+
+      const state = {
+        tripId: '',
+        members: []
+      };
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle('error', isError);
+      }
+
+      async function api(path, method = 'GET', body) {
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+          method,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: body ? JSON.stringify(body) : undefined
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || `Request failed with status ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      function renderMembers() {
+        membersEl.innerHTML = '';
+        paidByEl.innerHTML = '';
+        participantsEl.innerHTML = '';
+
+        for (const member of state.members) {
+          const li = document.createElement('li');
+          li.textContent = member.name;
+          membersEl.appendChild(li);
+
+          const option = document.createElement('option');
+          option.value = member.id;
+          option.textContent = member.name;
+          paidByEl.appendChild(option);
+
+          const label = document.createElement('label');
+          label.className = 'inline';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.name = 'participant';
+          checkbox.value = member.id;
+          checkbox.checked = true;
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(member.name));
+          participantsEl.appendChild(label);
+        }
+      }
+
+      function renderSummary(summary) {
+        balancesEl.innerHTML = '';
+        settlementsEl.innerHTML = '';
+
+        for (const item of summary.balances) {
+          const li = document.createElement('li');
+          li.textContent = `${item.memberName}: ${item.amount.toFixed(2)}`;
+          balancesEl.appendChild(li);
+        }
+
+        if (summary.settlements.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = 'No settlements needed.';
+          settlementsEl.appendChild(li);
+        } else {
+          for (const item of summary.settlements) {
+            const li = document.createElement('li');
+            li.textContent = `${item.fromMemberName} pays ${item.toMemberName}: ${item.amount.toFixed(2)}`;
+            settlementsEl.appendChild(li);
+          }
+        }
+      }
+
+      async function refreshSummary() {
+        if (!state.tripId) {
+          return;
+        }
+
+        const summary = await api(`/api/trips/${state.tripId}/summary`);
+        renderSummary(summary);
+      }
+
+      tripForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+          const trip = await api('/api/trips', 'POST', { name: tripNameInput.value.trim() });
+          state.tripId = trip.id;
+          state.members = [];
+          renderMembers();
+          balancesEl.innerHTML = '';
+          settlementsEl.innerHTML = '';
+          setStatus(`Trip created: ${trip.name}`);
+        } catch (error) {
+          setStatus(error.message, true);
+        }
+      });
+
+      memberForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!state.tripId) {
+          setStatus('Create a trip first.', true);
+          return;
+        }
+
+        try {
+          const member = await api(`/api/trips/${state.tripId}/members`, 'POST', {
+            name: memberNameInput.value.trim()
+          });
+
+          state.members.push(member);
+          renderMembers();
+          memberNameInput.value = '';
+          setStatus(`Member added: ${member.name}`);
+        } catch (error) {
+          setStatus(error.message, true);
+        }
+      });
+
+      expenseForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!state.tripId) {
+          setStatus('Create a trip first.', true);
+          return;
+        }
+
+        const participants = Array.from(document.querySelectorAll('input[name="participant"]:checked')).map(
+          (checkbox) => checkbox.value
+        );
+
+        try {
+          await api(`/api/trips/${state.tripId}/expenses`, 'POST', {
+            description: descriptionInput.value.trim(),
+            paidByMemberId: paidByEl.value,
+            amount: Number(amountInput.value),
+            participantMemberIds: participants
+          });
+
+          await refreshSummary();
+          setStatus('Expense added and summary updated.');
+        } catch (error) {
+          setStatus(error.message, true);
+        }
+      });
+
+      setStatus('Ready. Start by creating a trip.');
+    </script>
+  </body>
+</html>

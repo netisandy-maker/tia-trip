@@ -1,0 +1,25 @@
+{
+  "name": "tia-trip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo starter with Playwright + TypeScript + C#",
+  "scripts": {
+    "api:start": "dotnet run --project src/api/TiaTrip.Api/TiaTrip.Api.csproj --urls http://127.0.0.1:5080",
+    "web:start": "npx --yes serve src/web -l tcp://127.0.0.1:4173",
+    "test:ts": "playwright test -c playwright.config.ts",
+    "test:ts:headed": "playwright test -c playwright.config.ts --headed",
+    "test:ts:ui": "playwright test -c playwright.config.ts --ui",
+    "test:ts:debug": "playwright test -c playwright.config.ts --debug",
+    "test:ts:smoke": "playwright test -c playwright.config.ts --grep @smoke",
+    "report:ts": "playwright show-report",
+    "install:browsers": "playwright install",
+    "test": "npm run test:ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "dotenv": "^16.4.7",
+    "serve": "^14.2.4",
+    "typescript": "^5.8.2",
+    "wait-on": "^8.0.3"
+  }
+}
