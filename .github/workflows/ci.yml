@@ -73,6 +73,13 @@ jobs:
           dotnet restore tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj
           dotnet build tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj --configuration Release --no-restore
           pwsh tests/e2e-dotnet/TiaTrip.E2E.Dotnet/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          pwsh tests/e2e-dotnet/TiaTrip.E2E.Dotnet/bin/Release/net10.0/playwright.ps1 install chromium-headless-shell
+
+      - name: Start local API
+        run: nohup npm run api:start > api.log 2>&1 &
+
+      - name: Wait for API
+        run: npx wait-on http://127.0.0.1:5080/health
 
       - name: Start local web app
         run: nohup npm run web:start > web.log 2>&1 &
