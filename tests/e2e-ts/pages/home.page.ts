@@ -11,6 +11,7 @@ export class HomePage {
   readonly amount: Locator;
   readonly addExpenseButton: Locator;
   readonly settlementsList: Locator;
+  readonly statusMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,6 +24,7 @@ export class HomePage {
     this.amount = page.getByTestId('amount');
     this.addExpenseButton = page.getByTestId('add-expense-btn');
     this.settlementsList = page.getByTestId('settlements-list');
+    this.statusMessage = page.getByTestId('status');
   }
 
   async goto() {
@@ -32,11 +34,14 @@ export class HomePage {
   async createTrip(name: string) {
     await this.tripName.fill(name);
     await this.createTripButton.click();
+    await expect(this.statusMessage).toContainText('Trip created:', { timeout: 20_000 });
   }
 
   async addMember(name: string) {
     await this.memberName.fill(name);
     await this.addMemberButton.click();
+    await expect(this.statusMessage).toContainText(`Member added: ${name}`, { timeout: 20_000 });
+    await expect(this.page.locator('[data-testid="paid-by"] option', { hasText: name })).toHaveCount(1, { timeout: 20_000 });
   }
 
   async addExpense(description: string, payerName: string, amount: string) {
@@ -44,6 +49,7 @@ export class HomePage {
     await this.paidBy.selectOption({ label: payerName });
     await this.amount.fill(amount);
     await this.addExpenseButton.click();
+    await expect(this.statusMessage).toContainText('Expense added and summary updated.', { timeout: 20_000 });
   }
 
   async assertSettlement(text: string) {
