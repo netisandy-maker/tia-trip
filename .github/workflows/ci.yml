@@ -1,10 +1,13 @@
 name: CI
 
-on:
+'on':
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   e2e-ts:
@@ -79,13 +82,13 @@ jobs:
         run: nohup npm run api:start > api.log 2>&1 &
 
       - name: Wait for API
-        run: npx wait-on http://127.0.0.1:5080/health
+        run: npx wait-on http://127.0.0.1:5080/health --timeout 120000
 
       - name: Start local web app
         run: nohup npm run web:start > web.log 2>&1 &
 
       - name: Wait for web app
-        run: npx wait-on http://127.0.0.1:4173
+        run: npx wait-on http://127.0.0.1:4173 --timeout 120000
 
       - name: Run C# tests
         run: dotnet test tests/e2e-dotnet/TiaTrip.E2E.Dotnet/TiaTrip.E2E.Dotnet.csproj --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
